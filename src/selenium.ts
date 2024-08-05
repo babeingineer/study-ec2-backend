@@ -48,10 +48,12 @@ export async function isOpened() {
 }
 
 
-export async function startScreenShot(dir: string) {
+export async function startScreenShot(id: string) {
     screenshotIntervalId = setInterval(async () => {
         try {
-            const filePath = path.join(__dirname, "../static", dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
+            if(!isOpened()) clearInterval(screenshotIntervalId);
+            const dir = path.join(__dirname, "../static", id);
+            const filePath = path.join(dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
             await fs.promises.mkdir(dir, { recursive: true });
             screenshot({ format: 'png' })
                 .then((imageBuffer: any) => {
