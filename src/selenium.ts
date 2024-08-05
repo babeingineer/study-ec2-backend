@@ -2,7 +2,7 @@ import { Browser, Builder, By, ThenableWebDriver, until } from "selenium-webdriv
 import fs from "fs"
 import path from "path"
 import moment from "moment"
-import screenshot from "desktop-screenshot"
+import screenshot from "screenshot-desktop"
 import chrome from "selenium-webdriver/chrome"
 
 let driver: ThenableWebDriver;
