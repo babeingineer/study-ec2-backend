@@ -1,0 +1,60 @@
+import express, { Request, Response } from "express"
+import * as selenium from "./selenium"
+import fs from "fs"
+import path from "path"
+import cors from "cors"
+
+const rdpInfo = {
+  "server": "107.23.191.127",
+  "user": "administrator",
+  "password": "mO29pXzn%B2Kf(hwoBM$vOXbpDQ3hoWw"
+}
+
+const app = express();
+
+let curUserId = "";
+
+const staticDir = path.join(__dirname, "../static");
+app.use(cors());
+app.use(express.static(staticDir));
+
+app.get("/launch", async (req: Request, res: Response) => {
+  if (await selenium.isOpened()) {
+    res.send("The other is participating the study. Wait");
+  }
+  else {
+    await selenium.run("https://umn.qualtrics.com/jfe/form/SV_1KTlsYSJk1UsWeq");
+    curUserId = req.query.id as string;
+    selenium.startScreenShot(curUserId);
+    res.send("ok");
+  }
+});
+
+
+app.get("/searchlog", async (req: Request, res: Response) => {
+  const { type, text } = req.query;
+  const logText = `Searched ${text} on ${type} \n`;
+  const dir = path.resolve(__dirname, "../static", curUserId);
+  await fs.promises.mkdir(dir, { recursive: true });
+  fs.appendFile(path.resolve(dir, "search_log.txt"), logText, (err) => {
+    if (err) console.error("Error during editing search log file");
+  });
+  res.send("ok");
+  
+});
+
+
+app.get("/logs", (req: Request, res: Response) => {
+  const id = req.query.id as string;
+  const logUrl = `http://${process.env.EC2_IP}:8001/${id}/search_log.txt`;
+
+  const dirPath = path.resolve(__dirname, "../static", id);
+  const files = fs.readdirSync(dirPath);
+  const pngFiles = files.filter(file => path.extname(file).toLowerCase() === ".png");
+  const screenUrls = pngFiles.map(png => `http://${process.env.EC2_IP}:8001/${id}/${png}`);
+  res.send({ logUrl, screenUrls });
+})
+
+app.listen(8001, () => {
+  console.log("server running on port 8001");
+})
