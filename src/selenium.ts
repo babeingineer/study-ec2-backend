@@ -2,6 +2,7 @@ import { Browser, Builder, By, ThenableWebDriver, until } from "selenium-webdriv
 import fs from "fs"
 import path from "path"
 import moment from "moment"
+import screenshot from "desktop-screenshot"
 import chrome from "selenium-webdriver/chrome"
 
 let driver: ThenableWebDriver;
@@ -40,23 +41,34 @@ export async function isOpened() {
         // await driver.executeScript("return document.readyState");
         console.log(await driver.getWindowHandle())
     }
-    catch(err) {
+    catch (err) {
         return false;
     }
     return true;
 }
 
 
-export async function startScreenShot(dir: string){
+export async function startScreenShot(dir: string) {
     screenshotIntervalId = setInterval(async () => {
         try {
-            const screenshot = await driver.takeScreenshot();
-            const filePath = path.join(dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
+            const filePath = path.join(__dirname, "../static", dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
             await fs.promises.mkdir(dir, { recursive: true });
-            fs.writeFileSync(filePath, Buffer.from(screenshot, 'base64'));
-            console.log("file saves at " + filePath);
+            screenshot({ format: 'png' })
+                .then((imageBuffer: any) => {
+                    // Write the image buffer to a file
+                    fs.writeFile(filePath, imageBuffer, (err) => {
+                        if (err) {
+                            console.error('Error saving screenshot:', err);
+                        } else {
+                            console.log('Screenshot saved to', filePath);
+                        }
+                    });
+                })
+                .catch((err: any) => {
+                    console.error('Error capturing screenshot:', err);
+                });
         }
-        catch(err){
+        catch (err) {
             console.log("Error occured during screenshot");
         }
 
