@@ -4,6 +4,7 @@ import path from "path"
 import moment from "moment"
 import screenshot from "screenshot-desktop"
 import chrome from "selenium-webdriver/chrome"
+import { getRDPStatus } from "./utils"
 
 let driver: ThenableWebDriver;
 let screenshotIntervalId: NodeJS.Timeout;
@@ -22,7 +23,7 @@ export async function run(url: string) {
 
         driver = new Builder().forBrowser(Browser.CHROME).setChromeOptions(chromeOptions).build();
         await driver.get(url);
-        driver.wait(until.elementLocated(By.id("helloworld")), 20000000).catch(err => {
+        driver.wait(until.elementLocated(By.id("helloworld")), 1000 * 60 * 10).catch(err => {
             console.error("Error during run function");
         });
     }
@@ -33,7 +34,12 @@ export async function run(url: string) {
 
 
 export async function exit() {
-    await driver.quit();
+    try {
+        await driver.quit();
+    }
+    catch (err) {
+        console.error("Error in exciting selenium");
+    }
 }
 
 export async function isOpened() {
@@ -51,29 +57,30 @@ export async function isOpened() {
 export async function startScreenShot(id: string) {
     screenshotIntervalId = setInterval(async () => {
         try {
-            if(!isOpened()) clearInterval(screenshotIntervalId);
-            const dir = path.join(__dirname, "../static", id);
-            const filePath = path.join(dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
-            await fs.promises.mkdir(dir, { recursive: true });
-            screenshot({ format: 'png' })
-                .then((imageBuffer: any) => {
-                    // Write the image buffer to a file
-                    fs.writeFile(filePath, imageBuffer, (err) => {
-                        if (err) {
-                            console.error('Error saving screenshot:', err);
-                        } else {
-                            console.log('Screenshot saved to', filePath);
-                        }
+            if (!(await isOpened())) clearInterval(screenshotIntervalId);
+            if (await getRDPStatus() === "connected") {
+                const dir = path.join(__dirname, "../static", id);
+                const filePath = path.join(dir, moment().format("YYYY-MM-DD-HH-mm-ss") + ".png");
+                await fs.promises.mkdir(dir, { recursive: true });
+                screenshot({ format: 'png' })
+                    .then((imageBuffer: any) => {
+                        // Write the image buffer to a file
+                        fs.writeFile(filePath, imageBuffer, (err) => {
+                            if (err) {
+                                console.error('Error saving screenshot:', err);
+                            } else {
+                                console.log('Screenshot saved to', filePath);
+                            }
+                        });
+                    })
+                    .catch((err: any) => {
+                        console.error('Error capturing screenshot:', err);
                     });
-                })
-                .catch((err: any) => {
-                    console.error('Error capturing screenshot:', err);
-                });
+            }
         }
         catch (err) {
             console.log("Error occured during screenshot");
         }
-
     }, 5000);
 };
 

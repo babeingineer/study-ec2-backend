@@ -22,6 +22,12 @@
             "matches": [
                 "https://www.chatgpt.com/*"
             ]
+        },
+        {
+            "js": ["./EndDetecter.js"],
+            "matches": [
+                "https://umn.qualtrics.com/*"
+            ]
         }
     ],
     "background": {

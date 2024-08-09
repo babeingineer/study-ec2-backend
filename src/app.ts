@@ -3,6 +3,8 @@ import * as selenium from "./selenium"
 import fs from "fs"
 import path from "path"
 import cors from "cors"
+import { exec } from "child_process"
+import { getRDPStatus } from "./utils"
 
 
 const app = express();
@@ -35,9 +37,13 @@ app.get("/searchlog", async (req: Request, res: Response) => {
     if (err) console.error("Error during editing search log file");
   });
   res.send("ok");
-  
 });
 
+app.get("/ids", (req: Request, res: Response) => {
+  const dirPath = path.resolve(__dirname, "../static");
+  const dirs = fs.readdirSync(dirPath);
+  res.send(dirs);
+})
 
 app.get("/logs", (req: Request, res: Response) => {
   const id = req.query.id as string;
@@ -48,8 +54,25 @@ app.get("/logs", (req: Request, res: Response) => {
   const pngFiles = files.filter(file => path.extname(file).toLowerCase() === ".png");
   const screenUrls = pngFiles.map(png => `http://${process.env.EC2_IP}:8001/${id}/${png}`);
   res.send({ logUrl, screenUrls });
+});
+
+
+
+
+
+app.get("/status", async (req: Request, res: Response) => {
+  const status = await getRDPStatus();
+  console.log(status);
+  res.send(status);
+})
+
+app.get("/logoff", (req: Request, res: Response) => {
+  exec("logoff rdp-tcp");
+  selenium.exit();
+  res.send("Awesome");
 })
 
 app.listen(8001, () => {
   console.log("server running on port 8001");
-})
+});
+
